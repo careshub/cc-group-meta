@@ -341,7 +341,7 @@ class CC_Group_Meta {
 
 		$group_id = $group_id ? $group_id : bp_get_current_group_id();
 		//We'll need to load this file for wp_category_checklist to work
-        require_once(ABSPATH.'wp-admin/includes/template.php');
+        require_once( ABSPATH.'wp-admin/includes/template.php' );
 
 		if ( ! is_admin() ) :
 			?>
@@ -352,11 +352,15 @@ class CC_Group_Meta {
 		endif;
 		?>
 
-			<p><label for="cc_featured_group"><input type="checkbox" id="cc_featured_group" name="cc_featured_group" <?php checked( cc_get_groupmeta( 'cc_group_is_featured', $group_id ), 1 ); ?> /> Highlight on the groups directory.</label></p>
-			
-			<p><label for="group_use_aggregated_activity"><input type="checkbox" id="group_use_aggregated_activity" name="group_use_aggregated_activity" <?php checked( cc_get_groupmeta( 'group_use_aggregated_activity', $group_id ), 1 ); ?> /> Include child group activity in this group&rsquo;s activity stream.</label></p>
-			
-			<p><label for="group_is_prime_group"><input type="checkbox" id="group_is_prime_group" name="group_is_prime_group" <?php checked( cc_get_groupmeta( 'group_is_prime_group', $group_id ), 1 ); ?> /> This group is a "prime" group.</label></p>
+			<p><label for="cc_featured_group"><input type="checkbox" id="cc_featured_group" name="cc_featured_group" <?php checked( groups_get_groupmeta( $group_id, 'cc_group_is_featured' ), 1 ); ?> /> Highlight on the groups directory.</label></p>
+				
+			<p><label for="group_is_prime_group"><input type="checkbox" id="group_is_prime_group" name="group_is_prime_group" <?php checked( groups_get_groupmeta( $group_id, 'group_is_prime_group' ), 1 ); ?> /> This group is a "prime" group.</label></p>
+
+			<?php 	
+			// Expose a hook for other plugins that we may write.
+			// This is used by our activity aggregation plugin	
+			do_action( 'cc_group_meta_details_form_before_channels', $group_id ); 
+			?>
 
 			<h4>Associated Channels</h4>
 			<?php
@@ -395,10 +399,7 @@ class CC_Group_Meta {
 		$meta = array(
 			// Checkboxes
 			'cc_group_is_featured' => isset( $_POST['cc_featured_group'] ),
-			'group_use_aggregated_activity' => isset( $_POST['group_use_aggregated_activity'] ),
 			'group_is_prime_group' => isset( $_POST['group_is_prime_group'] ),
-
-
 		);
 
 		foreach ( $meta as $meta_key => $new_meta_value ) {
@@ -437,9 +438,13 @@ class CC_Group_Meta {
 				groups_delete_groupmeta( $group_id, 'cc_group_category', $delete_id );
 			}
 
+		// Expose a hook for other plugins that we may write.
+		// This is used by our activity aggregation plugin	
+		do_action( 'cc_group_meta_details_form_save', $group_id );
+
 	}
 
-	/*
+	/**
 	*  Adds channel filter dropdown list markup to the groups directory list
 	*  @uses   	wp_dropdown_categories()
 	*  @return 	string html markup
@@ -453,19 +458,18 @@ class CC_Group_Meta {
 			'exclude'			=> '1', // There's no point in showing "uncategorized"
 			'orderby'           => 'NAME',
 			'hide_empty'        => false,
-
 			);
 		// The class "last" is used so that BP will ignore the input.
 		// Hoping that bp-ajax-ignore or similar will be adopted: https://buddypress.trac.wordpress.org/ticket/5676
 		?>
-		<li class="filter bp-ajax-ignore last" id="groups-filter-by-channel" style="float:left;">
+		<li class="bp-ajax-ignore last" id="groups-filter-by-channel" style="float:left;">
 			<label for="groups-filter-channel">Channel:</label>
 			<?php wp_dropdown_categories( $args ); ?>
 		</li>
 		<?php
 	}
 
-	/*
+	/**
 	*  Adds "featured" option to the "Order by" dropdown list filter
 	*  @return 	string html markup
 	*  @since 	0.1.0
@@ -478,7 +482,7 @@ class CC_Group_Meta {
 
 	
 	/**
-	 * Builds a Group Meta Query to retrieve the favorited activities. Group meta_queries were introduced in 1.8
+	 * Builds a Group Meta Query to retrieve the favorited activities. Group meta_queries in bp_has_groups were introduced in 1.8
 	 * 
 	 * @param  string 	$query_string the front end arguments for the Activity loop
 	 * @param  string 	$object       the Component object
@@ -498,7 +502,6 @@ class CC_Group_Meta {
 	        'action'          => 'active',
 	        'scope'           => 'all',
 	        'page'            => 1,
-	        'user_id'         => 0,
 	        'search_terms'    => '',
 	        'exclude'         => false,
 	    );
