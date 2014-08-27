@@ -354,7 +354,7 @@ class CC_Group_Meta {
 
 			<p><label for="cc_featured_group"><input type="checkbox" id="cc_featured_group" name="cc_featured_group" <?php checked( groups_get_groupmeta( $group_id, 'cc_group_is_featured' ), 1 ); ?> /> Highlight on the groups directory.</label></p>
 				
-			<p><label for="group_is_prime_group"><input type="checkbox" id="group_is_prime_group" name="group_is_prime_group" <?php checked( groups_get_groupmeta( $group_id, 'group_is_prime_group' ), 1 ); ?> /> This group is a "prime" group.</label></p>
+			<p><label for="group_is_prime_group"><input type="checkbox" id="group_is_prime_group" name="group_is_prime_group" <?php checked( groups_get_groupmeta( $group_id, 'group_is_prime_group' ), 1 ); ?> /> Admins and mods can upload data; members can use advanced mapping tools.</label></p>
 
 			<?php 	
 			// Expose a hook for other plugins that we may write.
