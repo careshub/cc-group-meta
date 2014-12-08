@@ -32,7 +32,7 @@ add_action( 'bp_include', 'cc_group_meta_plugin_init', 23 );
 
 function cc_group_meta_class_init(){
 	// Get the helper functions and template tags
-	// require( dirname( __FILE__ ) . '/ccgm-functions.php' );
+	require( dirname( __FILE__ ) . '/ccgm-functions.php' );
 	// Get the class fired up
 	require( dirname( __FILE__ ) . '/class-cc-group-meta.php' );
 	add_action( 'bp_include', array( 'CC_Group_Meta', 'get_instance' ), 21 );

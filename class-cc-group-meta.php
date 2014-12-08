@@ -83,7 +83,7 @@ class CC_Group_Meta {
 		// Add a meta box to the group's "admin>settings" tab.
    		// We're also using BP_Group_Extension's admin_screen method to add this meta box to the WP-admin group edit
         add_filter( 'groups_custom_group_fields_editable', array( $this, 'meta_form_markup' ) );
-        // Catch the saving of the meta form, fired when create>settings pane is saved or admin>settings is saved 
+        // Catch the saving of the meta form, fired when create>settings pane is saved or admin>settings is saved
         add_action( 'groups_group_details_edited', array( $this, 'meta_form_save') );
 		add_action( 'groups_created_group', array( $this, 'meta_form_save' ) );
 
@@ -96,9 +96,11 @@ class CC_Group_Meta {
 		// and for the groups tab of the user's profile
 		add_action( 'bp_member_group_order_options', array( $this, 'featured_option' ) );
 
+		// Display featured groups at the top of the groups loop
+		add_action( 'bp_before_groups_loop', array( $this, 'sticky_featured_groups') );
+
 		// Catch the AJAX filter request and modify the query string
 		add_filter( 'bp_ajax_querystring', array( $this, 'groups_querystring_filter' ), 37, 2 );
-
 
 	}
 
@@ -348,18 +350,18 @@ class CC_Group_Meta {
 			<div class="checkbox content-row">
 				<hr />
 				<h4>Commons-specific settings</h4>
-			<?php 
+			<?php
 		endif;
 		?>
 
 			<p><label for="cc_featured_group"><input type="checkbox" id="cc_featured_group" name="cc_featured_group" <?php checked( groups_get_groupmeta( $group_id, 'cc_group_is_featured' ), 1 ); ?> /> Highlight on the groups directory.</label></p>
-				
+
 			<p><label for="group_is_prime_group"><input type="checkbox" id="group_is_prime_group" name="group_is_prime_group" <?php checked( groups_get_groupmeta( $group_id, 'group_is_prime_group' ), 1 ); ?> /> Admins and mods can upload data; members can use advanced mapping tools.</label></p>
 
-			<?php 	
+			<?php
 			// Expose a hook for other plugins that we may write.
-			// This is used by our activity aggregation plugin	
-			do_action( 'cc_group_meta_details_form_before_channels', $group_id ); 
+			// This is used by our activity aggregation plugin
+			do_action( 'cc_group_meta_details_form_before_channels', $group_id );
 			?>
 
 			<h4>Associated Channels</h4>
@@ -381,7 +383,7 @@ class CC_Group_Meta {
 			?>
 			<hr />
 			</div>
-			<?php 
+			<?php
 		endif;
 
 	}
@@ -422,7 +424,7 @@ class CC_Group_Meta {
 
 		// I don't think we'll want to store the category relationship as a serialized array, but as multiple meta items.
 		// Not as efficient storage-wise, but it'll greatly simplify finding groups by category.
-			$categories = (array) $_POST['post_category']; // This is OK if empty, an empty array works for us. 
+			$categories = (array) $_POST['post_category']; // This is OK if empty, an empty array works for us.
 			// Fetch existing values
 			$old_cats = groups_get_groupmeta( $group_id, 'cc_group_category', false );
 			// Categories in the db but not in the POST should be removed
@@ -439,7 +441,7 @@ class CC_Group_Meta {
 			}
 
 		// Expose a hook for other plugins that we may write.
-		// This is used by our activity aggregation plugin	
+		// This is used by our activity aggregation plugin
 		do_action( 'cc_group_meta_details_form_save', $group_id );
 
 	}
@@ -451,6 +453,7 @@ class CC_Group_Meta {
 	*  @since 	0.1.0
 	*/
 	public function output_channel_select() {
+		if ( current_user_can( 'delete_others_pages' ) ) {
 		$args = array(
 			'show_option_all' 	=> 'All Channels',
 			'id' 				=> 'groups-filter-channel',
@@ -462,11 +465,12 @@ class CC_Group_Meta {
 		// The class "last" is used so that BP will ignore the input.
 		// Hoping that bp-ajax-ignore or similar will be adopted: https://buddypress.trac.wordpress.org/ticket/5676
 		?>
-		<li class="bp-ajax-ignore last" id="groups-filter-by-channel" style="float:left;">
+		<li class="no-ajax last" id="groups-filter-by-channel" style="float:left;">
 			<label for="groups-filter-channel">Channel:</label>
 			<?php wp_dropdown_categories( $args ); ?>
 		</li>
 		<?php
+		} // end if capability
 	}
 
 	/**
@@ -480,10 +484,63 @@ class CC_Group_Meta {
 		<?php
 	}
 
-	
+	/**
+	*  Adds "featured" groups (maximum of 3) to the top of the groups list
+	*  @return 	string html markup
+	*  @since 	0.1.0
+	*/
+	public function sticky_featured_groups() {
+		// If the user is interacting with the directory, don't show this at the top--that's annoying.
+		// If the request is AJAX-based, don't show the featured groups.
+		if ( ! ( defined('DOING_AJAX') && DOING_AJAX ) ) {
+
+			$args = array(
+				'per_page' => 2,
+				'meta_query' => array(
+					array(
+		           		/* this is the meta_key you want to filter on */
+		                'key'     => 'cc_group_is_featured',
+		                /* You need to get all values that are = to the id selected */
+		                'value'   => 1,
+		                'type'    => 'numeric',
+		                'compare' => '='
+		                ),
+		            ),
+				);
+			if ( bp_has_groups( $args ) ) :
+				$shown_hubs = array();
+				?>
+		        <h5>Featured Hubs</h5>
+				<ul class="item-list compact" id="groups-list-featured">
+				<?php
+				while ( bp_groups() ) : bp_the_group();
+				?>
+					<li id="featured-group-<?php
+					echo bp_get_group_slug() . ' ' . bp_get_group_status();
+					?>">
+						<div class="item-avatar">
+							<a href="<?php bp_group_permalink(); ?>"><?php bp_group_avatar( 'type=thumb&width=50&height=50' ); ?></a>
+						</div>
+						<div class="item">
+							<div class="item-title"><a href="<?php bp_group_permalink(); ?>"><?php bp_group_name(); ?></a></div>
+							<div class="item-desc"><?php bp_group_description_excerpt(); ?></div>
+						</div>
+						<div class="clear"></div>
+					</li>
+				<?php
+				$shown_hubs[] = bp_get_group_id();
+				endwhile;
+				do_action( 'cc_add_to_featured_hubs', $shown_hubs );
+				?>
+				</ul>
+			<?php endif; // bp_has_groups
+		} // if ( ! ( defined('DOING_AJAX') && DOING_AJAX ) )
+	}
+
+
 	/**
 	 * Builds a Group Meta Query to retrieve the favorited activities. Group meta_queries in bp_has_groups were introduced in 1.8
-	 * 
+	 *
 	 * @param  string 	$query_string the front end arguments for the Activity loop
 	 * @param  string 	$object       the Component object
 	 * @uses   wp_parse_args()
@@ -505,7 +562,7 @@ class CC_Group_Meta {
 	        'search_terms'    => '',
 	        'exclude'         => false,
 	    );
- 
+
         $args = wp_parse_args( $query_string, $defaults );
 
         // The channel filter data is stored as a cookie and passed along with the post request
@@ -518,7 +575,7 @@ class CC_Group_Meta {
         $channel_filter = '';
 		if ( isset( $post_cookie['bp-groups-channel'] ) )
 			$channel_filter = $post_cookie['bp-groups-channel'];
-        
+
         // Add the channel filter meta query if needed
         if ( $channel_filter ) {
 
@@ -533,7 +590,7 @@ class CC_Group_Meta {
 
         }
 
-        // Add the featured group filter 
+        // Add the featured group filter
        	if ( $args['type'] == 'featured' ) {
             $args['meta_query'][] = array(
            		/* this is the meta_key you want to filter on */
@@ -552,7 +609,7 @@ class CC_Group_Meta {
        	}
 
         $query_string = empty( $args ) ? $query_string : $args;
-      
+
         return apply_filters( 'bp_groups_channel_querystring_filter', $query_string, $object );
 	}
 
