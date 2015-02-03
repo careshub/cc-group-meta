@@ -56,6 +56,16 @@ class CC_Group_Meta {
 	protected static $instance = null;
 
 	/**
+	 * Comma-separated string of category ids to exclude.
+	 *
+	 * @since    0.1.0
+	 *
+	 * @var      string
+	 * 1 is "uncategorized", 57528 is "guest voice"
+	 */
+	protected $exclude_cats = '1,57528';
+
+	/**
 	 * Initialize the plugin by setting localization and loading public scripts
 	 * and styles.
 	 *
@@ -331,6 +341,21 @@ class CC_Group_Meta {
 	}
 
 	/**
+	 * We use a subset of the complete list of categories for groups
+	 * This function excludes the unnecessary options and refers to the 
+	 * variable $exclude_cats
+	 *
+	 * @since    0.1.0
+	 */
+	public function get_group_categories() {
+        $args = array(
+			'hide_empty'	=> 0,
+			'exclude'		=> $this->exclude_cats,
+			);
+		return get_categories( $args );
+	}
+
+	/**
 	 *  Renders extra fields on form when creating a group and when editing group details
 	 * 	Used by CC_Custom_Meta_Group_Extension::admin_screen()
   	 *  @param  	int $group_id
@@ -342,17 +367,12 @@ class CC_Group_Meta {
 			return;
 
 		$group_id = $group_id ? $group_id : bp_get_current_group_id();
-		//We'll need to load this file for wp_category_checklist to work
-        require_once( ABSPATH.'wp-admin/includes/template.php' );
 
-		if ( ! is_admin() ) :
-			?>
+		if ( ! is_admin() ) : ?>
 			<div class="checkbox content-row">
 				<hr />
 				<h4>Commons-specific settings</h4>
-			<?php
-		endif;
-		?>
+		<?php endif; ?>
 
 			<p><label for="cc_featured_group"><input type="checkbox" id="cc_featured_group" name="cc_featured_group" <?php checked( groups_get_groupmeta( $group_id, 'cc_group_is_featured' ), 1 ); ?> /> Highlight on the groups directory.</label></p>
 
@@ -366,26 +386,28 @@ class CC_Group_Meta {
 
 			<h4>Associated Channels</h4>
 			<?php
-			// Get the main categories. We're going to apply them to groups as well.
-	        // get_terms either returns an array of terms or a WP_Error_Object if there's a problem
-            $cat_args = array(
-              	'descendants_and_self'  => 0,
-              	'checked_ontop'         => false,
-            );
             if ( $selected_cats = groups_get_groupmeta( $group_id, 'cc_group_category', false ) ) {
-            	$cat_args['selected_cats'] = array_map( 'intval', $selected_cats );
+            	$selected_cats = array_map( 'intval', $selected_cats );
             }
-            echo '<ul class="no-bullets horizontal">';
-	            wp_terms_checklist( 0, $cat_args );
-            echo '</ul>';
-
-		if ( ! is_admin() ) :
-			?>
+            $categories = $this->get_group_categories();
+            if ( ! empty( $categories ) ) :
+            ?>
+	            <ul class="no-bullets horizontal">
+					<?php
+					    foreach ( $categories as $category ) {
+			            	$selected_cat = in_array( $category->term_id, $selected_cats) ? true : false;
+						?>
+						<li id="category-<?php echo $category->term_id; ?>"><label class="selectit"><input value="<?php echo $category->term_id; ?>" type="checkbox" name="post_category[]" id="in-category-<?php echo $category->term_id; ?>" <?php checked( $selected_cat ); ?>> <?php echo $category->name; ?></label></li>
+						<?php
+					}
+					?>
+	            </ul>
+            <?php
+            endif; //if ( ! empty( $categories ) )
+		if ( ! is_admin() ) : ?>
 			<hr />
 			</div>
-			<?php
-		endif;
-
+		<?php endif;
 	}
 
 	/**
@@ -424,21 +446,21 @@ class CC_Group_Meta {
 
 		// I don't think we'll want to store the category relationship as a serialized array, but as multiple meta items.
 		// Not as efficient storage-wise, but it'll greatly simplify finding groups by category.
-			$categories = (array) $_POST['post_category']; // This is OK if empty, an empty array works for us.
-			// Fetch existing values
-			$old_cats = groups_get_groupmeta( $group_id, 'cc_group_category', false );
-			// Categories in the db but not in the POST should be removed
-			$cats_to_delete = array_diff( $old_cats, $categories );
-			// Categories not in the db but in the POST should be added
-			$cats_to_add = array_diff( $categories, $old_cats );
+		$categories = (array) $_POST['post_category']; // This is OK if empty, an empty array works for us.
+		// Fetch existing values
+		$old_cats = groups_get_groupmeta( $group_id, 'cc_group_category', false );
+		// Categories in the db but not in the POST should be removed
+		$cats_to_delete = array_diff( $old_cats, $categories );
+		// Categories not in the db but in the POST should be added
+		$cats_to_add = array_diff( $categories, $old_cats );
 
-			foreach ($cats_to_add as $add_id) {
-				groups_add_groupmeta( $group_id, 'cc_group_category', $add_id, false );
-			}
+		foreach ($cats_to_add as $add_id) {
+			groups_add_groupmeta( $group_id, 'cc_group_category', $add_id, false );
+		}
 
-			foreach ($cats_to_delete as $delete_id) {
-				groups_delete_groupmeta( $group_id, 'cc_group_category', $delete_id );
-			}
+		foreach ($cats_to_delete as $delete_id) {
+			groups_delete_groupmeta( $group_id, 'cc_group_category', $delete_id );
+		}
 
 		// Expose a hook for other plugins that we may write.
 		// This is used by our activity aggregation plugin
@@ -454,21 +476,20 @@ class CC_Group_Meta {
 	*/
 	public function output_channel_select() {
 		if ( current_user_can( 'delete_others_pages' ) ) {
-		$args = array(
-			'show_option_all' 	=> 'All Channels',
-			'id' 				=> 'groups-filter-channel',
-			'name' 				=> 'groups-filter-channel',
-			'exclude'			=> '1', // There's no point in showing "uncategorized"
-			'orderby'           => 'NAME',
-			'hide_empty'        => false,
-			);
-		// The class "last" is used so that BP will ignore the input.
-		// Hoping that bp-ajax-ignore or similar will be adopted: https://buddypress.trac.wordpress.org/ticket/5676
-		?>
-		<li class="no-ajax last" id="groups-filter-by-channel" style="float:left;">
-			<label for="groups-filter-channel">Channel:</label>
-			<?php wp_dropdown_categories( $args ); ?>
-		</li>
+			$args = array(
+				'show_option_all' 	=> 'All Channels',
+				'id' 				=> 'groups-filter-channel',
+				'name' 				=> 'groups-filter-channel',
+				'exclude'			=> $this->exclude_cats,
+				'orderby'           => 'NAME',
+				'hide_empty'        => false,
+				);
+			// The class "no-ajax" is used so that BP will ignore the input.
+			?>
+			<li class="no-ajax" id="groups-filter-by-channel">
+				<label for="groups-filter-channel">Channel:</label>
+				<?php wp_dropdown_categories( $args ); ?>
+			</li>
 		<?php
 		} // end if capability
 	}
