@@ -389,7 +389,7 @@ class CC_Group_Meta {
             if ( $selected_cats = groups_get_groupmeta( $group_id, 'cc_group_category', false ) ) {
             	$selected_cats = array_map( 'intval', $selected_cats );
             }
-            $categories = $this->get_group_categories();
+            $categories = self::get_group_categories();
             if ( ! empty( $categories ) ) :
             ?>
 	            <ul class="no-bullets horizontal">
