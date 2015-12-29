@@ -298,8 +298,8 @@ class CC_Group_Meta {
 	 * @since    0.1.0
 	 */
 	public function enqueue_styles() {
-		if ( function_exists( 'bp_is_groups_component' ) && ccgn_is_component() )
-			wp_enqueue_style( $this->plugin_slug . '-plugin-styles', plugins_url( 'assets/css/public.css', __FILE__ ), array(), self::VERSION );
+		// if ( function_exists( 'bp_is_groups_component' ) && ccgn_is_component() )
+		// 	wp_enqueue_style( $this->plugin_slug . '-plugin-styles', plugins_url( 'assets/css/public.css', __FILE__ ), array(), self::VERSION );
 	}
 
 	/**
@@ -315,34 +315,8 @@ class CC_Group_Meta {
 	}
 
 	/**
-	 * NOTE:  Actions are points in the execution of a page or process
-	 *        lifecycle that WordPress fires.
-	 *
-	 *        Actions:    http://codex.wordpress.org/Plugin_API#Actions
-	 *        Reference:  http://codex.wordpress.org/Plugin_API/Action_Reference
-	 *
-	 * @since    0.1.0
-	 */
-	public function action_method_name() {
-		// @TODO: Define your action hook callback here
-	}
-
-	/**
-	 * NOTE:  Filters are points of execution in which WordPress modifies data
-	 *        before saving it or sending it to the browser.
-	 *
-	 *        Filters: http://codex.wordpress.org/Plugin_API#Filters
-	 *        Reference:  http://codex.wordpress.org/Plugin_API/Filter_Reference
-	 *
-	 * @since    0.1.0
-	 */
-	public function filter_method_name() {
-		// @TODO: Define your filter hook callback here
-	}
-
-	/**
 	 * We use a subset of the complete list of categories for groups
-	 * This function excludes the unnecessary options and refers to the 
+	 * This function excludes the unnecessary options and refers to the
 	 * variable $exclude_cats
 	 *
 	 * @since    0.1.0
@@ -475,23 +449,21 @@ class CC_Group_Meta {
 	*  @since 	0.1.0
 	*/
 	public function output_channel_select() {
-		if ( current_user_can( 'delete_others_pages' ) ) {
-			$args = array(
-				'show_option_all' 	=> 'All Channels',
-				'id' 				=> 'groups-filter-channel',
-				'name' 				=> 'groups-filter-channel',
-				'exclude'			=> $this->exclude_cats,
-				'orderby'           => 'NAME',
-				'hide_empty'        => false,
-				);
-			// The class "no-ajax" is used so that BP will ignore the input.
-			?>
-			<li class="no-ajax" id="groups-filter-by-channel">
-				<label for="groups-filter-channel">Channel:</label>
-				<?php wp_dropdown_categories( $args ); ?>
-			</li>
+		$args = array(
+			'show_option_all' 	=> 'All Channels',
+			'id' 				=> 'groups-filter-channel',
+			'name' 				=> 'groups-filter-channel',
+			'exclude'			=> $this->exclude_cats,
+			'orderby'           => 'NAME',
+			'hide_empty'        => false,
+			);
+		// The class "no-ajax" is used so that BP will ignore the input.
+		?>
+		<li class="no-ajax" id="groups-filter-by-channel">
+			<label for="groups-filter-channel">Channel:</label>
+			<?php wp_dropdown_categories( $args ); ?>
+		</li>
 		<?php
-		} // end if capability
 	}
 
 	/**
@@ -532,7 +504,7 @@ class CC_Group_Meta {
 				$shown_hubs = array();
 				?>
 		        <h5>Featured Hubs</h5>
-				<ul class="item-list compact" id="groups-list-featured">
+				<ul class="item-list" id="groups-list-featured">
 				<?php
 				while ( bp_groups() ) : bp_the_group();
 				?>
