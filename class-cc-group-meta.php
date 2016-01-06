@@ -512,7 +512,7 @@ class CC_Group_Meta {
 					echo bp_get_group_slug() . ' ' . bp_get_group_status();
 					?>">
 						<div class="item-avatar">
-							<a href="<?php bp_group_permalink(); ?>"><?php bp_group_avatar( 'type=thumb&width=50&height=50' ); ?></a>
+							<a href="<?php bp_group_permalink(); ?>"><?php bp_group_avatar(); ?></a>
 						</div>
 						<div class="item">
 							<div class="item-title"><a href="<?php bp_group_permalink(); ?>"><?php bp_group_name(); ?></a></div>
