@@ -350,7 +350,22 @@ class CC_Group_Meta {
 
 			<p><label for="cc_featured_group"><input type="checkbox" id="cc_featured_group" name="cc_featured_group" <?php checked( groups_get_groupmeta( $group_id, 'cc_group_is_featured' ), 1 ); ?> /> Highlight on the groups directory.</label></p>
 
-			<p><label for="group_is_prime_group"><input type="checkbox" id="group_is_prime_group" name="group_is_prime_group" <?php checked( groups_get_groupmeta( $group_id, 'group_is_prime_group' ), 1 ); ?> /> Admins and mods can upload data; members can use advanced mapping tools.</label></p>
+		<fieldset>
+			<legend>Mapping capabilities</legend>
+
+			<p><label for="members_can_upload_data"><input type="checkbox" id="members_can_upload_data" name="members_can_upload_data" <?php checked( groups_get_groupmeta( $group_id, 'members_can_upload_data' ), 1 ); ?> /> Admins and mods can upload data; members can use advanced mapping tools.</label></p>
+
+			<p><label for="members_can_edit_data">Which members of this hub can create and edit data using the YouAdd tool?</label>
+				<?php
+				$edit_data_level = groups_get_groupmeta( $group_id, 'members_can_edit_data' );
+				?>
+			<select id="members_can_edit_data" name="members_can_edit_data" >
+				<option value="" <?php selected( $edit_data_level, '' ); ?>>No one</option>
+				<option value="admins" <?php selected( $edit_data_level, 'admins' ); ?>>Admins</option>
+				<option value="mods" <?php selected( $edit_data_level, 'mods' ); ?>>Moderators and Admins</option>
+				<option value="members" <?php selected( $edit_data_level, 'members' ); ?>>Members</option>
+			</select></p>
+		</fieldset>
 
 			<?php
 			// Expose a hook for other plugins that we may write.
@@ -397,7 +412,9 @@ class CC_Group_Meta {
 		$meta = array(
 			// Checkboxes
 			'cc_group_is_featured' => isset( $_POST['cc_featured_group'] ),
-			'group_is_prime_group' => isset( $_POST['group_is_prime_group'] ),
+			'members_can_upload_data' => isset( $_POST['members_can_upload_data'] ), // formerly "group_is_prime_group"
+			// Selects
+			'members_can_edit_data' => isset( $_POST['members_can_edit_data'] ) ? $_POST['members_can_edit_data'] : '',
 		);
 
 		foreach ( $meta as $meta_key => $new_meta_value ) {
