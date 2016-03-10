@@ -47,7 +47,7 @@ class CC_Custom_Meta_Group_Extension extends BP_Group_Extension {
      */
     public function admin_screen( $group_id = null ) {
     	// Use our vanilla meta form markup
-        $cc_group_meta = new CC_Group_Meta();
+        $cc_group_meta = CC_Group_Meta::get_instance();
     	return $cc_group_meta->meta_form_markup( $group_id );
     }
 
@@ -57,7 +57,7 @@ class CC_Custom_Meta_Group_Extension extends BP_Group_Extension {
      */
     public function admin_screen_save( $group_id = null ) {
        	// Use our all-purpose saving function
-        $cc_group_meta = new CC_Group_Meta();
+        $cc_group_meta = CC_Group_Meta::get_instance();
     	return $cc_group_meta->meta_form_save( $group_id );
     }
 
