@@ -110,7 +110,9 @@ class CC_Group_Meta {
 		add_action( 'bp_before_groups_loop', array( $this, 'sticky_featured_groups') );
 
 		// Catch the AJAX filter request and modify the query string
-		add_filter( 'bp_ajax_querystring', array( $this, 'groups_querystring_filter' ), 37, 2 );
+		// add_filter( 'bp_ajax_querystring', array( $this, 'groups_querystring_filter' ), 37, 2 );
+		add_filter( 'bp_after_has_groups_parse_args', array( $this, 'has_groups_args_filter' ) );
+
 		// Handle JSON request for returning groups to which the user can upload data.
 		add_action( 'wp_ajax_cc-json-groups-user-can-upload-data-to', array( $this, 'json_groups_user_can_upload_data_to' ) );
 
@@ -628,6 +630,62 @@ class CC_Group_Meta {
         $query_string = empty( $args ) ? $query_string : $args;
 
         return apply_filters( 'bp_groups_channel_querystring_filter', $query_string, $object );
+
+	/**
+	 * Builds a Group Meta Query to retrieve the favorited activities. Group meta_queries in bp_has_groups were introduced in 1.8
+	 *
+	 * @param  string 	$query_string the front end arguments for the Activity loop
+	 * @param  string 	$object       the Component object
+	 * @uses   wp_parse_args()
+	 * @return array()|string $query_string 	new arguments or same if not needed
+	 */
+	public function has_groups_args_filter( $args ) {
+
+		// The channel filter data is stored as a cookie and passed along with the post request
+		if ( ! empty( $_POST['cookie'] ) ) {
+			$post_cookie = wp_parse_args( str_replace( '; ', '&', urldecode( $_POST['cookie'] ) ) );
+		} else {
+			$post_cookie = &$_COOKIE;
+		}
+
+		$channel_filter = '';
+		if ( isset( $post_cookie['bp-groups-channel'] ) ) {
+			$channel_filter = $post_cookie['bp-groups-channel'];
+		}
+
+		// Add the channel filter meta query if needed
+		if ( $channel_filter ) {
+			$args['meta_query'][] = array(
+				/* this is the meta_key you want to filter on */
+				'key'     => 'cc_group_category',
+				/* You need to get all values that are = to the id selected */
+				'value'   => $channel_filter,
+				'type'    => 'numeric',
+				'compare' => '='
+			);
+		}
+
+		// Add the featured group filter
+		if ( $args['type'] == 'featured' ) {
+			$args['meta_query'][] = array(
+				/* this is the meta_key you want to filter on */
+				'key'     => 'cc_group_is_featured',
+				/* You need to get all values that are = to the id selected */
+				'value'   => 1,
+				'type'    => 'numeric',
+				'compare' => '='
+			);
+		}
+
+		// Add the operator if both filters are enabled
+		// See http://codex.wordpress.org/Class_Reference/WP_User_Query#Custom_Field_Parameters for structure
+		if ( $channel_filter && $args['type'] == 'featured' ) {
+			$args['meta_query']['relation'] = 'AND';
+		}
+
+		return $args;
+	}
+
 	function json_groups_user_can_upload_data_to() {
 		$meta_key = 'members_can_upload_data';
 		$user_id = bp_loggedin_user_id();
