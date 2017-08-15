@@ -401,12 +401,17 @@ class CC_Group_Meta {
 
 	/**
 	 *  Saves the input from our extra meta fields
- 	 * 	Used by CC_Custom_Meta_Group_Extension::admin_screen_save()
- 	 *  @param  	int $group_id
+	 * 	Used by CC_Custom_Meta_Group_Extension::admin_screen_save()
+	 *  @param  	int $group_id
 	 *  @return 	void
 	 *  @since    	0.1.0
 	 */
 	public function meta_form_save( $group_id = 0 ) {
+		// Don't update these settings unless the user can update them.
+		if ( ! current_user_can( 'delete_others_pages' ) ) {
+			return;
+		}
+
 		$group_id = $group_id ? $group_id : bp_get_current_group_id();
 
 		$meta = array(
