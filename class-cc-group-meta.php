@@ -111,6 +111,8 @@ class CC_Group_Meta {
 
 		// Catch the AJAX filter request and modify the query string
 		add_filter( 'bp_ajax_querystring', array( $this, 'groups_querystring_filter' ), 37, 2 );
+		// Handle JSON request for returning groups to which the user can upload data.
+		add_action( 'wp_ajax_cc-json-groups-user-can-upload-data-to', array( $this, 'json_groups_user_can_upload_data_to' ) );
 
 	}
 
@@ -626,6 +628,40 @@ class CC_Group_Meta {
         $query_string = empty( $args ) ? $query_string : $args;
 
         return apply_filters( 'bp_groups_channel_querystring_filter', $query_string, $object );
+	function json_groups_user_can_upload_data_to() {
+		$meta_key = 'members_can_upload_data';
+		$user_id = bp_loggedin_user_id();
+
+		$groups = groups_get_groups( array(
+			'per_page' => false,
+			'populate_extras' => false,
+			'update_meta_cache' => false,
+			'user_id' => bp_loggedin_user_id(),
+			'meta_query' => array(
+					array(
+						'key'     => $meta_key,
+						'compare' => 'EXISTS',
+					),
+				),
+			)
+		);
+		$retval = array();
+		foreach ( $groups['groups'] as $key => $group ) {
+			if ( groups_is_user_admin( $user_id, $group->id ) || groups_is_user_mod( $user_id, $group->id ) ) {
+				$retval[] = array(
+					'id'	=> $group->id,
+					'name'	=> $group->name,
+					'link' 	=> bp_get_group_permalink( $group ),
+				);
+			}
+		}
+
+		// Send response
+		header("content-type: text/javascript; charset=utf-8");
+		header("Access-Control-Allow-Origin: *");
+		echo htmlspecialchars($_GET['callback']) . '(' . json_encode( $retval ) . ')';
+
+		exit;
 	}
 
 }
