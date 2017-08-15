@@ -91,10 +91,10 @@ class CC_Group_Meta {
 		// add_filter( '@TODO', array( $this, 'filter_method_name' ) );
 
 		// Add a meta box to the group's "admin>settings" tab.
-   		// We're also using BP_Group_Extension's admin_screen method to add this meta box to the WP-admin group edit
-        add_filter( 'groups_custom_group_fields_editable', array( $this, 'meta_form_markup' ) );
-        // Catch the saving of the meta form, fired when create>settings pane is saved or admin>settings is saved
-        add_action( 'groups_group_details_edited', array( $this, 'meta_form_save') );
+		// We're also using BP_Group_Extension's admin_screen method to add this meta box to the WP-admin group edit
+		add_filter( 'groups_custom_group_fields_editable', array( $this, 'meta_form_markup' ) );
+		// Catch the saving of the meta form, fired when create>settings pane is saved or admin>settings is saved
+		add_action( 'groups_group_details_edited', array( $this, 'meta_form_save') );
 		add_action( 'groups_created_group', array( $this, 'meta_form_save' ) );
 
 		// Add the filter dropdown to the Groups Directory
@@ -326,7 +326,7 @@ class CC_Group_Meta {
 	 * @since    0.1.0
 	 */
 	public function get_group_categories() {
-        $args = array(
+		$args = array(
 			'hide_empty'	=> 0,
 			'exclude'		=> $this->exclude_cats,
 			);
@@ -336,7 +336,7 @@ class CC_Group_Meta {
 	/**
 	 *  Renders extra fields on form when creating a group and when editing group details
 	 * 	Used by CC_Custom_Meta_Group_Extension::admin_screen()
-  	 *  @param  	int $group_id
+	 *  @param  	int $group_id
 	 *  @return 	string html markup
 	 *  @since    	0.1.0
 	 */
@@ -379,24 +379,24 @@ class CC_Group_Meta {
 
 			<h4>Associated Channels</h4>
 			<?php
-            if ( $selected_cats = groups_get_groupmeta( $group_id, 'cc_group_category', false ) ) {
-            	$selected_cats = array_map( 'intval', $selected_cats );
-            }
-            $categories = self::get_group_categories();
-            if ( ! empty( $categories ) ) :
-            ?>
-	            <ul class="no-bullets horizontal">
+			if ( $selected_cats = groups_get_groupmeta( $group_id, 'cc_group_category', false ) ) {
+				$selected_cats = array_map( 'intval', $selected_cats );
+			}
+			$categories = self::get_group_categories();
+			if ( ! empty( $categories ) ) :
+			?>
+				<ul class="no-bullets horizontal">
 					<?php
-					    foreach ( $categories as $category ) {
-			            	$selected_cat = in_array( $category->term_id, $selected_cats) ? true : false;
+						foreach ( $categories as $category ) {
+							$selected_cat = in_array( $category->term_id, $selected_cats) ? true : false;
 						?>
 						<li id="category-<?php echo $category->term_id; ?>"><label class="selectit"><input value="<?php echo $category->term_id; ?>" type="checkbox" name="post_category[]" id="in-category-<?php echo $category->term_id; ?>" <?php checked( $selected_cat ); ?>> <?php echo $category->name; ?></label></li>
 						<?php
 					}
 					?>
-	            </ul>
-            <?php
-            endif; //if ( ! empty( $categories ) )
+				</ul>
+			<?php
+			endif; //if ( ! empty( $categories ) )
 		if ( ! is_admin() ) : ?>
 			<hr />
 			</div>
@@ -478,7 +478,7 @@ class CC_Group_Meta {
 		$args = array(
 			'show_option_all' 	=> 'All Channels',
 			'id' 				=> 'groups-filter-channel',
-			'name' 				=> 'groups-filter-channel',
+			'name' 				=> 'groups-filter-args',
 			'exclude'			=> $this->exclude_cats,
 			'orderby'           => 'NAME',
 			'hide_empty'        => false,
@@ -486,7 +486,7 @@ class CC_Group_Meta {
 		// The class "no-ajax" is used so that BP will ignore the input.
 		?>
 		<li class="no-ajax" id="groups-filter-by-channel">
-			<label for="groups-filter-channel">Channel:</label>
+			<label for="groups-filter-args">Channel:</label>
 			<?php wp_dropdown_categories( $args ); ?>
 		</li>
 		<?php
@@ -511,25 +511,25 @@ class CC_Group_Meta {
 	public function sticky_featured_groups() {
 		// If the user is interacting with the directory, don't show this at the top--that's annoying.
 		// If the request is AJAX-based, don't show the featured groups.
-		if ( ! ( defined('DOING_AJAX') && DOING_AJAX ) ) {
+		if ( bp_is_groups_directory() && ! ( defined('DOING_AJAX') && DOING_AJAX ) ) {
 
 			$args = array(
 				'per_page' => 2,
 				'meta_query' => array(
 					array(
-		           		/* this is the meta_key you want to filter on */
-		                'key'     => 'cc_group_is_featured',
-		                /* You need to get all values that are = to the id selected */
-		                'value'   => 1,
-		                'type'    => 'numeric',
-		                'compare' => '='
-		                ),
-		            ),
+						/* this is the meta_key you want to filter on */
+						'key'     => 'cc_group_is_featured',
+						/* You need to get all values that are = to the id selected */
+						'value'   => 1,
+						'type'    => 'numeric',
+						'compare' => '='
+						),
+					),
 				);
 			if ( bp_has_groups( $args ) ) :
 				$shown_hubs = array();
 				?>
-		        <h5>Featured Hubs</h5>
+				<h5>Featured Hubs</h5>
 				<ul class="item-list" id="groups-list-featured">
 				<?php
 				while ( bp_groups() ) : bp_the_group();
@@ -568,68 +568,69 @@ class CC_Group_Meta {
 	public function groups_querystring_filter( $query_string = '', $object = '' ) {
 
 		if ( ! in_array( $object, array('tree','groups') ) )
-           	return $query_string;
+			return $query_string;
 
-        // You can easily manipulate the query string
-        // by transforming it into an array and merging
-        // arguments with these default ones
-	    $defaults = array(
-	        'type'            => 'active',
-	        'action'          => 'active',
-	        'scope'           => 'all',
-	        'page'            => 1,
-	        'search_terms'    => '',
-	        'exclude'         => false,
-	    );
+		// You can easily manipulate the query string
+		// by transforming it into an array and merging
+		// arguments with these default ones
+		$defaults = array(
+			'type'            => 'active',
+			'action'          => 'active',
+			'scope'           => 'all',
+			'page'            => 1,
+			'search_terms'    => '',
+			'exclude'         => false,
+		);
 
-        $args = wp_parse_args( $query_string, $defaults );
+		$args = wp_parse_args( $query_string, $defaults );
 
-        // The channel filter data is stored as a cookie and passed along with the post request
-        if ( ! empty( $_POST['cookie'] ) ) {
+		// The channel filter data is stored as a cookie and passed along with the post request
+		if ( ! empty( $_POST['cookie'] ) ) {
 			$post_cookie = wp_parse_args( str_replace( '; ', '&', urldecode( $_POST['cookie'] ) ) );
 		} else {
 			$post_cookie = &$_COOKIE;
 		}
 
-        $channel_filter = '';
+		$channel_filter = '';
 		if ( isset( $post_cookie['bp-groups-channel'] ) )
 			$channel_filter = $post_cookie['bp-groups-channel'];
 
-        // Add the channel filter meta query if needed
-        if ( $channel_filter ) {
+		// Add the channel filter meta query if needed
+		if ( $channel_filter ) {
 
-            $args['meta_query'][] = array(
-           		/* this is the meta_key you want to filter on */
-                'key'     => 'cc_group_category',
-                /* You need to get all values that are = to the id selected */
-                'value'   => $channel_filter,
-                'type'    => 'numeric',
-                'compare' => '='
-            );
+			$args['meta_query'][] = array(
+				/* this is the meta_key you want to filter on */
+				'key'     => 'cc_group_category',
+				/* You need to get all values that are = to the id selected */
+				'value'   => $channel_filter,
+				'type'    => 'numeric',
+				'compare' => '='
+			);
 
-        }
+		}
 
-        // Add the featured group filter
-       	if ( $args['type'] == 'featured' ) {
-            $args['meta_query'][] = array(
-           		/* this is the meta_key you want to filter on */
-                'key'     => 'cc_group_is_featured',
-                /* You need to get all values that are = to the id selected */
-                'value'   => 1,
-                'type'    => 'numeric',
-                'compare' => '='
-            );
-       	}
+		// Add the featured group filter
+		if ( $args['type'] == 'featured' ) {
+			$args['meta_query'][] = array(
+				/* this is the meta_key you want to filter on */
+				'key'     => 'cc_group_is_featured',
+				/* You need to get all values that are = to the id selected */
+				'value'   => 1,
+				'type'    => 'numeric',
+				'compare' => '='
+			);
+		}
 
-       	// Add the operator if both filters are enabled
-       	// See http://codex.wordpress.org/Class_Reference/WP_User_Query#Custom_Field_Parameters for structure
-       	if ( $channel_filter && $args['type'] == 'featured' ) {
-       		$args['meta_query']['relation'] = 'AND';
-       	}
+		// Add the operator if both filters are enabled
+		// See http://codex.wordpress.org/Class_Reference/WP_User_Query#Custom_Field_Parameters for structure
+		if ( $channel_filter && $args['type'] == 'featured' ) {
+			$args['meta_query']['relation'] = 'AND';
+		}
 
-        $query_string = empty( $args ) ? $query_string : $args;
+		$query_string = empty( $args ) ? $query_string : $args;
 
-        return apply_filters( 'bp_groups_channel_querystring_filter', $query_string, $object );
+		return apply_filters( 'bp_groups_channel_querystring_filter', $query_string, $object );
+	}
 
 	/**
 	 * Builds a Group Meta Query to retrieve the favorited activities. Group meta_queries in bp_has_groups were introduced in 1.8
